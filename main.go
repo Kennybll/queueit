@@ -7,20 +7,20 @@ import (
 	j "github.com/kennybll/queueit/internal/job"
 	p "github.com/kennybll/queueit/internal/producer"
 	q "github.com/kennybll/queueit/internal/queue"
-	store2 "github.com/kennybll/queueit/internal/store"
+	s "github.com/kennybll/queueit/internal/store"
 	"log"
 )
 
 func main() {
 	// Initialize store
-	store := store2.NewMemoryStore()
+	store := s.NewMemoryStore()
 
 	// Initialize queue with store
 	queue := q.NewQueue(store)
 
 	// Initialize producer, consumer
 	producer := p.NewProducer(queue)
-	consumer := c.NewConsumer(queue, store, func(job *j.Job, store store2.Store) {
+	consumer := c.NewConsumer(queue, store, func(job *j.Job, store s.Store) {
 		// Process job
 		println("Processing job", job.Id)
 		job.Fail()

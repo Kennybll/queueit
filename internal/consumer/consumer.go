@@ -26,7 +26,7 @@ func (c *Consumer) Start() {
 			continue
 		}
 		// Set job status to processing
-		job.Status = job.JobStatusProcessing
+		job.Status = j.JobStatusProcessing
 		// Update job in store
 		_ = c.store.Update(job)
 		// Process job asynchronously

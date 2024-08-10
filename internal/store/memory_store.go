@@ -27,7 +27,7 @@ func (s *MemoryStore) GetNextJob() (*j.Job, error) {
 	for _, job := range s.data {
 		// Compare job priority and timestamp to determine the next job
 		// Priority overrides timestamp
-		if job.Status == job.JobStatusPending && job.Timestamp.Before(time.Now()) {
+		if job.Status == j.JobStatusPending && job.Timestamp.Before(time.Now()) {
 			if nextJob == nil || job.Priority > nextJob.Priority || (job.Priority == nextJob.Priority && job.Timestamp.Before(nextJob.Timestamp)) {
 				nextJob = job
 			}

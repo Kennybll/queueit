@@ -46,7 +46,7 @@ func (s *RedisStore) GetNextJob() (*j.Job, error) {
 			continue
 		}
 
-		if job.Status == job.JobStatusPending && job.Timestamp.Before(time.Now()) {
+		if job.Status == j.JobStatusPending && job.Timestamp.Before(time.Now()) {
 			// Compare job priority and timestamp to determine the next job
 			// Priority overrides timestamp
 			if nextJob == nil || job.Priority > nextJob.Priority || (job.Priority == nextJob.Priority && job.Timestamp.Before(nextJob.Timestamp)) {
