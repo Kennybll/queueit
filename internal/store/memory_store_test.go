@@ -86,7 +86,7 @@ func (suite *MemoryStoreTestSuite) TestUpdateJob() {
 
 	job, err := suite.store.GetJob(suite.job1.Id)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), job.JobStatusProcessing, job.Status)
+	assert.Equal(suite.T(), j.JobStatusProcessing, job.Status)
 }
 
 func (suite *MemoryStoreTestSuite) TestListJobs() {
@@ -110,7 +110,7 @@ func (suite *MemoryStoreTestSuite) TestRetryJob() {
 	assert.NoError(suite.T(), err)
 	job, err := suite.store.GetJob(suite.job3.Id)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), job.JobStatusPending, job.Status)
+	assert.Equal(suite.T(), j.JobStatusPending, job.Status)
 }
 
 func (suite *MemoryStoreTestSuite) TestPromoteJob() {
@@ -125,7 +125,7 @@ func (suite *MemoryStoreTestSuite) TestPromoteJob() {
 	assert.NoError(suite.T(), err)
 	job, err := suite.store.GetJob(suite.job3.Id)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), job.JobStatusPending, job.Status)
+	assert.Equal(suite.T(), j.JobStatusPending, job.Status)
 	assert.NotEqual(suite.T(), timeStampCopy, job.Timestamp)
 }
 

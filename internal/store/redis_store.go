@@ -12,12 +12,22 @@ import (
 type RedisStore struct {
 	client *redis.Client
 	ctx    context.Context
+	e      Encryption
 }
 
-func NewRedisStore(opts redis.Options) *RedisStore {
+type RedisStoreOptions struct {
+	redisOptions redis.Options
+	e            *Encryption
+}
+
+func NewRedisStore(opts RedisStoreOptions) *RedisStore {
+	if opts.e == nil {
+		opts.e = NewEncryption("")
+	}
 	return &RedisStore{
-		client: redis.NewClient(&opts),
+		client: redis.NewClient(&opts.redisOptions),
 		ctx:    context.Background(),
+		e:      *opts.e,
 	}
 }
 
@@ -26,6 +36,14 @@ func (s *RedisStore) Add(job *j.Job) error {
 	jobData, err := json.Marshal(job)
 	if err != nil {
 		return err
+	}
+
+	if s.e.secret != "" {
+		encryptedData, err := s.e.Encrypt(string(jobData))
+		if err != nil {
+			return err
+		}
+		jobData = []byte(encryptedData)
 	}
 
 	return s.client.Set(s.ctx, job.Id, jobData, 0).Err()
@@ -69,6 +87,14 @@ func (s *RedisStore) GetJob(id string) (*j.Job, error) {
 		return nil, err
 	}
 
+	if s.e.secret != "" {
+		decryptedData, err := s.e.Decrypt(jobData)
+		if err != nil {
+			return nil, err
+		}
+		jobData = decryptedData
+	}
+
 	var job j.Job
 	if err := json.Unmarshal([]byte(jobData), &job); err != nil {
 		return nil, err
@@ -87,6 +113,14 @@ func (s *RedisStore) Update(job *j.Job) error {
 	jobData, err := json.Marshal(job)
 	if err != nil {
 		return err
+	}
+
+	if s.e.secret != "" {
+		encryptedData, err := s.e.Encrypt(string(jobData))
+		if err != nil {
+			return err
+		}
+		jobData = []byte(encryptedData)
 	}
 
 	return s.client.Set(s.ctx, job.Id, jobData, 0).Err()

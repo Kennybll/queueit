@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	j "github.com/kennybll/queueit/internal/job"
 	"github.com/redis/go-redis/v9"
 	"testing"
@@ -23,7 +24,9 @@ func (suite *RedisStoreTestSuite) SetupTest() {
 	opts := redis.Options{
 		Addr: "localhost:6379",
 	}
-	suite.store = NewRedisStore(opts)
+	suite.store = NewRedisStore(RedisStoreOptions{
+		redisOptions: opts,
+	})
 
 	err := suite.store.client.FlushDB(context.Background()).Err()
 	if err != nil {
@@ -96,7 +99,7 @@ func (suite *RedisStoreTestSuite) TestUpdateJob() {
 
 	job, err := suite.store.GetJob(suite.job1.Id)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), job.JobStatusProcessing, job.Status)
+	assert.Equal(suite.T(), j.JobStatusProcessing, job.Status)
 }
 
 func (suite *RedisStoreTestSuite) TestListJobs() {
@@ -120,7 +123,7 @@ func (suite *RedisStoreTestSuite) TestRetryJob() {
 	assert.NoError(suite.T(), err)
 	job, err := suite.store.GetJob(suite.job3.Id)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), job.JobStatusPending, job.Status)
+	assert.Equal(suite.T(), j.JobStatusPending, job.Status)
 }
 
 func (suite *RedisStoreTestSuite) TestPromoteJob() {
@@ -135,7 +138,7 @@ func (suite *RedisStoreTestSuite) TestPromoteJob() {
 	assert.NoError(suite.T(), err)
 	job, err := suite.store.GetJob(suite.job3.Id)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), job.JobStatusPending, job.Status)
+	assert.Equal(suite.T(), j.JobStatusPending, job.Status)
 	assert.NotEqual(suite.T(), timeStampCopy, job.Timestamp)
 }
 
@@ -223,6 +226,40 @@ func (suite *RedisStoreTestSuite) TestFailOnRetryWhenHitMaxAttempts() {
 
 	err := suite.store.RetryJob(suite.job1.Id)
 	assert.Error(suite.T(), err)
+}
+
+func (suite *RedisStoreTestSuite) TestEncryption() {
+	secret := "0123456789abcdef0123456789abcdef"
+	opts := redis.Options{
+		Addr: "localhost:6379",
+	}
+	suite.store = NewRedisStore(RedisStoreOptions{
+		redisOptions: opts,
+		e:            NewEncryption(secret),
+	})
+
+	err := suite.store.client.FlushDB(context.Background()).Err()
+	if err != nil {
+		suite.T().Fatalf("Failed to flush Redis DB: %v", err)
+	}
+
+	suite.job1 = j.NewJob("data1", j.NewJobOptions{
+		Id:          "job1",
+		Priority:    3,
+		MaxAttempts: 3,
+	})
+
+	err = suite.store.Add(suite.job1)
+	assert.NoError(suite.T(), err)
+
+	job, err := suite.store.client.Get(suite.store.ctx, suite.job1.Id).Result()
+	assert.NoError(suite.T(), err)
+
+	// Check if the job data is encrypted
+	jsonData, err := json.Marshal(job)
+	assert.NoError(suite.T(), err)
+
+	assert.NotEqual(suite.T(), jsonData, job)
 }
 
 func (suite *RedisStoreTestSuite) SuiteClose() {
